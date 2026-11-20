@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config, isAllowedOrigin } from './config.js';
 import { pool } from './db/pool.js';
+import { explainDbError, runMigrations } from './db/migrate.js';
 import { authOptional } from './middleware/auth.js';
 import { errorHandler } from './utils/http.js';
 import authRoutes from './routes/auth.js';
@@ -38,6 +39,17 @@ app.use('/api/users', userRoutes);
 app.use('/api', featureRoutes); //           /api/memorials/..., /api/kinship, /api/lunar/convert
 app.use('/api', (_req, res) => res.status(404).json({ error: 'Không tìm thấy API' }));
 app.use(errorHandler);
+
+// Tự tạo bảng / cập nhật schema trước khi nhận request – không phụ thuộc bước pre-deploy của Railway
+// (đặt AUTO_MIGRATE=false nếu muốn chỉ chạy migrate thủ công)
+if (process.env.AUTO_MIGRATE !== 'false') {
+  try {
+    await runMigrations();
+  } catch (e) {
+    console.error('✖ Không chuẩn bị được database:', explainDbError(e));
+    process.exit(1);
+  }
+}
 
 const server = app.listen(config.port, '0.0.0.0', () => {
   console.log(`🏯 Gia phả API chạy tại cổng ${config.port} (${config.isProd ? 'production' : 'development'})`);

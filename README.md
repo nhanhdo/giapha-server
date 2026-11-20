@@ -33,6 +33,9 @@ Tài khoản mẫu: `tocTruong / Admin@123` (Tộc trưởng) · `thuKy / ThuKy@
 
 1. **New Project → Deploy from GitHub repo**, chọn repo backend (để trống Root Directory). File [railway.json](railway.json) đã cấu hình sẵn:
    - pre-deploy: `npm run db:migrate` (áp schema, chạy lại nhiều lần vẫn an toàn)
+   - **Ngoài ra server tự tạo bảng mỗi lần khởi động**, nên dù bước pre-deploy không chạy, database trống vẫn được tạo đủ bảng và tài khoản Tộc trưởng (`ADMIN_USERNAME` / `ADMIN_PASSWORD`). Đặt `AUTO_MIGRATE=false` nếu chỉ muốn chạy migrate thủ công.
+   - Nếu repo chứa nhiều thư mục và anh/chị đặt *Root Directory* = `server`, Railway **không** tự tìm `server/railway.json`. Phải khai báo *Settings → Config-as-code → Railway Config File* = `/server/railway.json`.
+   - Thiếu `DATABASE_URL` hoặc trỏ sai Postgres: server dừng ngay với thông báo chỉ cách sửa (xem tab **Deploy Logs**).
    - start: `npm start`
    - health check: `/api/health`
 2. **+ New → Database → PostgreSQL**. Image Postgres của Railway đã có sẵn các extension `ltree`, `pg_trgm`, `unaccent`, `citext`.

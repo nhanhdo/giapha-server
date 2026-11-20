@@ -25,6 +25,12 @@ if (!process.env.JWT_SECRET) {
   console.warn('[config] JWT_SECRET chưa được đặt – đang dùng khóa mặc định (chỉ dùng cho dev).');
 }
 
+// Production không được âm thầm rơi về localhost khi thiếu DATABASE_URL
+if (isProd && !process.env.DATABASE_URL) {
+  console.error('[config] Thiếu DATABASE_URL. Trên Railway: service backend → Variables → thêm DATABASE_URL = ${{Postgres.DATABASE_URL}}');
+  process.exit(1);
+}
+
 const toRegex = (pattern) => new RegExp(`^${pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '[a-z0-9-]+')}$`, 'i');
 const originMatchers = config.corsOrigins.map(toRegex);
 
