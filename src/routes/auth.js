@@ -76,7 +76,12 @@ r.patch('/password', requireAuth, async (req, res) => {
     .parse(req.body);
   const u = await db.one(`SELECT * FROM users WHERE id = $1 AND is_active`, [req.user.id]);
   if (!u || !(await bcrypt.compare(currentPassword, u.passwordHash))) throw new HttpError(400, 'Mật khẩu hiện tại không đúng');
-  await db.q(`UPDATE users SET password_hash = $1 WHERE id = $2`, [await bcrypt.hash(newPassword, 10), u.id]);
+  const updated = await db.one(
+    `UPDATE users SET password_hash = $1, auth_version = auth_version + 1
+      WHERE id = $2 AND auth_version = $3 AND is_active RETURNING id`,
+    [await bcrypt.hash(newPassword, 10), u.id, req.user.authVersion],
+  );
+  if (!updated) throw new HttpError(401, 'Phiên đăng nhập không còn hiệu lực');
   res.json({ ok: true });
 });
 

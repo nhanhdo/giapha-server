@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
+import { db } from '../db/pool.js';
 import { HttpError } from '../utils/http.js';
 
 /**
@@ -21,23 +22,30 @@ export const can = (user, perm) => !!user && PERMISSIONS[perm]?.includes(user.ro
 
 export function signToken(user) {
   return jwt.sign(
-    { sub: user.id, role: user.role, memberId: user.memberId ?? null, name: user.displayName },
+    { sub: user.id, authVersion: user.authVersion },
     config.jwtSecret,
     { expiresIn: config.jwtExpiresIn },
   );
 }
 
 /** Gắn req.user nếu có Bearer token hợp lệ (không bắt buộc) */
-export function authOptional(req, _res, next) {
+export async function authOptional(req, _res, next) {
   const h = req.headers.authorization;
-  if (h?.startsWith('Bearer ')) {
-    try {
-      const p = jwt.verify(h.slice(7), config.jwtSecret);
-      req.user = { id: p.sub, role: p.role, memberId: p.memberId, displayName: p.name };
-    } catch {
-      /* token hết hạn/sai -> coi như khách */
-    }
+  if (!h?.startsWith('Bearer ')) return next();
+
+  let token;
+  try {
+    token = jwt.verify(h.slice(7), config.jwtSecret);
+  } catch {
+    return next();
   }
+  if (!Number.isInteger(token.sub) || !Number.isInteger(token.authVersion)) return next();
+
+  const user = await db.one(
+    `SELECT id, role, member_id, display_name, auth_version FROM users WHERE id = $1 AND is_active`,
+    [token.sub],
+  );
+  if (user?.authVersion === token.authVersion) req.user = user;
   next();
 }
 

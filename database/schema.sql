@@ -164,6 +164,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE users ADD COLUMN IF NOT EXISTS auth_version INTEGER NOT NULL DEFAULT 0;
+
 -- Đề xuất chỉnh sửa (thành viên gửi – quản trị viên duyệt)
 CREATE TABLE IF NOT EXISTS edit_suggestions (
   id               BIGSERIAL PRIMARY KEY,

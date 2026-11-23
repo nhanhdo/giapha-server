@@ -50,6 +50,7 @@ r.patch('/:id', async (req, res) => {
   if (b.password) {
     vals.push(await bcrypt.hash(b.password, 10));
     sets.push(`password_hash = $${vals.length}`);
+    sets.push('auth_version = auth_version + 1');
   }
   if (!sets.length) throw new HttpError(400, 'Không có gì để cập nhật');
   vals.push(id);
